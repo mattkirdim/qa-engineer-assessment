@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { v4 as uuid } from "uuid";
 import styled from "@emotion/styled";
 import { AddInput } from "./components/AddInput";
@@ -14,13 +14,7 @@ const Wrapper = styled.div({
   width: 300,
 });
 
-/**
-* This is the initial todo state.
-* Instead of loading this data on every reload,
-* we should save the todo state to local storage,
-* and restore on page load. This will give us
-* persistent storage.
-*/
+const LOCAL_STORAGE_KEY = "todos"; // Key for localStorage
 
 const initialData: Todo[] = [
   {
@@ -41,9 +35,20 @@ const initialData: Todo[] = [
 ];
 
 function App() {
-  const [todos, setTodos] = useState<Todo[]>(initialData);
+  // Load todos from localStorage or use initialData
+  const [todos, setTodos] = useState<Todo[]>(() => {
+    const savedTodos = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return savedTodos ? JSON.parse(savedTodos) : initialData;
+  });
 
+  // Save todos to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(todos));
+  }, [todos]);
+
+  // Add a new todo
   const addTodo = useCallback((label: string) => {
+    if (!label.trim()) return; // Prevent adding empty todos
     setTodos((prev) => [
       {
         id: uuid(),
@@ -54,9 +59,26 @@ function App() {
     ]);
   }, []);
 
-  const handleChange = useCallback((checked: boolean) => {
-    // handle the check/uncheck logic
+  // Toggle the checked state and auto-sink checked items
+  const handleChange = useCallback((id: string, checked: boolean) => {
+    setTodos((prev) => {
+      const updatedTodos = prev.map((todo) =>
+        todo.id === id ? { ...todo, checked } : todo
+      );
+  
+      console.log("Todos before sorting:", updatedTodos);
+  
+      // Ensure checked items are always at the bottom
+      const sortedTodos = updatedTodos.sort((a, b) => {
+        if (a.checked === b.checked) return 0; // Maintain original order if checked states are equal
+        return a.checked ? 1 : -1; // Checked items move to the bottom
+      });
+  
+      console.log("Todos after sorting:", sortedTodos);
+      return sortedTodos;
+    });
   }, []);
+  
 
   return (
     <Wrapper>
@@ -64,7 +86,11 @@ function App() {
       <AddInput onAdd={addTodo} />
       <TodoList>
         {todos.map((todo) => (
-          <TodoItem {...todo} onChange={handleChange} />
+          <TodoItem
+            key={todo.id}
+            {...todo}
+            onChange={(checked) => handleChange(todo.id, checked)}
+          />
         ))}
       </TodoList>
     </Wrapper>

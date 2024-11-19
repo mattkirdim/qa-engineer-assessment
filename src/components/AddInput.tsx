@@ -14,6 +14,17 @@ const Input = styled.input({
   marginBottom: 8,
 });
 
+const Button = styled.button({
+  width: "100%",
+  padding: 10,
+  backgroundColor: "#007BFF",
+  color: "white",
+  border: "none",
+  borderRadius: 3,
+  cursor: "pointer",
+  fontWeight: "bold",
+});
+
 export interface AddInputProps {
   onAdd: (label: string) => void;
 }
@@ -25,8 +36,10 @@ export const AddInput: FC<AddInputProps> = ({ onAdd }) => {
     <Form
       onSubmit={(e) => {
         e.preventDefault();
-        onAdd(input);
-        setInput("");
+        if (input.trim()) {
+          onAdd(input);
+          setInput("");
+        }
       }}
     >
       <Input
@@ -34,6 +47,7 @@ export const AddInput: FC<AddInputProps> = ({ onAdd }) => {
         value={input}
         placeholder="Add a new todo item here"
       />
+      <Button type="submit">Add</Button>
     </Form>
   );
 };
